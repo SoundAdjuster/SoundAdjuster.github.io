@@ -3,7 +3,8 @@ const { FFmpeg } = FFmpegWASM;
 let ffmpeg = null;
 
 document.getElementById('processBtn').addEventListener('click', async () => {
-    const targetLoudness = document.getElementById('loudnessInput').value || '-31.5';
+    const targetLoudness = document.getElementById('loudnessInput').value;
+    console.log("測定結果：" + targetLoudness);
 
     if (fileArray.length === 0) {
         alert('ファイルを選択してください。');
@@ -21,22 +22,24 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     for (const file of fileArray) {
         const name = file.name;
         const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
+        const tempFileName = "temp_" + Date.now() + "_" + wavFileName;
 
         try {
             console.log(`"${name}"を処理中...`);
+
             await ffmpeg.writeFile(name, await fetchFile(file));
 
             // ラウドネス正規化を適用してWAVとして出力
-            await ffmpeg.exec(['-i', name, '-af', `loudnorm=I=${targetLoudness}`, wavFileName]);
+            await ffmpeg.exec(['-i', name, '-af', `loudnorm=I=${targetLoudness}`, tempFileName]);
 
-            const data = await ffmpeg.readFile(wavFileName);
+            const data = await ffmpeg.readFile(tempFileName);
 
             downloadFile(data, wavFileName);
 
             console.log(`"${name}"の処理が完了しました。`);
 
         } catch (error) {
-            alert(`${name}の処理中にエラーが発生しました。コンソールを確認してください。`);
+            alert(`${name}の処理中にエラーが発生しました。`);
         }
     }
 });
