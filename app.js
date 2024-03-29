@@ -1,50 +1,52 @@
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
+const { fetchFile } = FFmpegUtil;
+const { FFmpeg } = FFmpegWASM;
+let ffmpeg = null;
 
 document.getElementById('processBtn').addEventListener('click', async () => {
-    const files = document.getElementById('fileInput').files;
     const targetLoudness = document.getElementById('loudnessInput').value || '-31.5';
-    if (files.length === 0) {
+
+    if (fileArray.length === 0) {
         alert('ファイルを選択してください。');
         return;
     }
 
-    if (!ffmpeg.isLoaded()) {
-        await ffmpeg.load();
+    // ffmpegのインスタンスがまだロードされていない場合にのみロードする
+    if (ffmpeg === null) {
+        ffmpeg = new FFmpeg()
+        await ffmpeg.load({
+            coreURL: "/assets/core/package/dist/umd/ffmpeg-core.js",
+        });
     }
 
-    for (const file of files) {
-        const fileName = file.name;
-        const wavFileName = fileName.replace(/\.[^/.]+$/, "") + ".wav";
+    for (const file of fileArray) {
+        const name = file.name;
+        const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
 
-        await ffmpeg.FS('writeFile', fileName, await fetchFile(file));
+        try {
+            console.log(`"${name}"を処理中...`);
+            await ffmpeg.writeFile(name, await fetchFile(file));
 
-        // 第一パス: ラウドネス情報の取得
-        await ffmpeg.run('-i', fileName, '-af', 'loudnorm=I=-31.5:print_format=json', '-f', 'null', '-');
-        const stderr = ffmpeg.FS('readFile', 'ffmpeg-stderr.log').toString();
-        const loudnessInfo = stderr.match(/\{.+\}/);
-        let measuredI = '-31.5';
-        if (loudnessInfo) {
-            const loudnessData = JSON.parse(loudnessInfo[0]);
-            measuredI = loudnessData.input_i;
+            // ラウドネス正規化を適用してWAVとして出力
+            await ffmpeg.exec(['-i', name, '-af', `loudnorm=I=${targetLoudness}`, wavFileName]);
+
+            const data = await ffmpeg.readFile(wavFileName);
+
+            downloadFile(data, wavFileName);
+
+            console.log(`"${name}"の処理が完了しました。`);
+
+        } catch (error) {
+            alert(`${name}の処理中にエラーが発生しました。コンソールを確認してください。`);
         }
-
-        // 第二パス: ラウドネス正規化を適用してWAVとして出力
-        await ffmpeg.run('-i', fileName, '-af', `loudnorm=I=${targetLoudness}:measured_i=${measuredI}`, wavFileName);
-
-        const data = ffmpeg.FS('readFile', wavFileName);
-        const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/wav' }));
-
-        // ダウンロードリンクの作成
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = wavFileName;
-        document.body.appendChild(a);
-        a.click();
-
-        // ファイルシステムからファイルを削除
-        ffmpeg.FS('unlink', fileName);
-        ffmpeg.FS('unlink', wavFileName);
-        a.remove();
     }
 });
+
+function downloadFile(data, fileName) {
+    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/wav' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}

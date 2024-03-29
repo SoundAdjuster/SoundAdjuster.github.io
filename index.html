@@ -1,10 +1,114 @@
 <html>
   <head>
+    <title>Sound Adjuster</title>
+    <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
     <script src="/assets/ffmpeg/package/dist/umd/ffmpeg.js"></script>
     <script src="/assets/util/package/dist/umd/index.js"></script>
   </head>
   <body>
+    <h1>Sound Adjuster</h1>
 
+    <!-- ドラッグ＆ドロップエリア -->
+    <div id="dropZone" style="border: 2px dashed #aaa; padding: 20px; text-align: center;">
+      ファイルをここにドラッグ＆ドロップ、または
+      <input type="file" id="fileInput" accept=".mp3, .wav, .aac, .m4a, .flac, .ogg" multiple hidden>
+      <button onclick="document.getElementById('fileInput').click();">ファイルを選択</button>
+    </div>
+
+    <!-- 選択されたファイルのリストを表示するエリア -->
+    <div id="fileList"></div>
+
+    <!-- ラウドネス値の入力: 大きな増減ボタンを提供する -->
+    <div id="loudnessControl">
+      <button onclick="changeLoudness(-0.1)">-</button>
+      <input type="number" id="loudnessInput" value="-31.5" min="-50" max="0" step="0.1">
+      <button onclick="changeLoudness(0.1)">+</button>
+    </div>
+
+    <button id="processBtn">処理開始</button>
+
+    <script>
+    // ラウドネス値の増減を行う関数
+    function changeLoudness(change) {
+      var loudnessInput = document.getElementById('loudnessInput');
+      var currentVal = parseFloat(loudnessInput.value);
+      var newVal = currentVal + change;
+
+      // 最小値と最大値の範囲内に新しい値を制限する
+      if (newVal >= parseFloat(loudnessInput.min) && newVal <= parseFloat(loudnessInput.max)) {
+          loudnessInput.value = newVal.toFixed(1); // 値を0.1単位で固定
+      }
+    }
+    </script>
+
+
+    <script>
+   // ファイルの状態を保持するための配列
+    let fileArray = [];
+
+    // ドラッグ＆ドロップイベントの設定
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileListContainer = document.getElementById('fileList');
+
+    // ファイルが選択されたときにリストを更新する
+    fileInput.addEventListener('change', (e) => {
+        addFiles(e.target.files);
+        updateFileList();
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#e1e7ec';
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '';
+        addFiles(e.dataTransfer.files);
+        updateFileList();
+    });
+
+    // 新しいファイルを既存の配列に追加する関数
+    function addFiles(newFiles) {
+        for (const file of newFiles) {
+            let uniqueName = file.name;
+            let duplicateCount = 1; // 重複があった場合にカウントを増やす
+
+            // 既存のファイルと名前が重複しているか確認
+            while (fileArray.some(f => f.name === uniqueName)) {
+                const extensionIndex = file.name.lastIndexOf('.');
+                const namePart = file.name.slice(0, extensionIndex);
+                const extensionPart = file.name.slice(extensionIndex);
+                uniqueName = `${namePart}(${duplicateCount++})${extensionPart}`;
+            }
+
+            // ユニークな名前でファイルオブジェクトを配列に追加
+            const fileWithUniqueName = new File([file], uniqueName, { type: file.type });
+            fileArray.push(fileWithUniqueName);
+        }
+    }
+
+    // 選択されたファイルのリストをUIに表示する関数
+    function updateFileList() {
+        fileListContainer.innerHTML = '';
+        const list = document.createElement('ul');
+
+        for (const file of fileArray) {
+            const listItem = document.createElement('li');
+            listItem.textContent = file.name;
+            list.appendChild(listItem);
+        }
+
+        fileListContainer.appendChild(list);
+    }
+    </script>
+    <script src="app.js"></script>
   </body>
 </html>

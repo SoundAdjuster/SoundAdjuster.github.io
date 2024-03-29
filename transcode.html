@@ -24,6 +24,7 @@
           ffmpeg.on("progress", ({ progress, time }) => {
             message.innerHTML = `${progress * 100} %, time: ${time / 1000000} s`;
           });
+
           await ffmpeg.load({
             coreURL: "/assets/core/package/dist/umd/ffmpeg-core.js",
           });
