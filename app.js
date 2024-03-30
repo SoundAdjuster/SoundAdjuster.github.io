@@ -1,40 +1,42 @@
-const { fetchFile } = FFmpegUtil;
-const { FFmpeg } = FFmpegWASM;
-let ffmpeg = null;
+let audioContext;
+
+// decodeAudioDataをプロミス化するヘルパー関数
+function decodeAudioDataPromise(audioContext, arrayBuffer) {
+    return new Promise((resolve, reject) => {
+        audioContext.decodeAudioData(
+            arrayBuffer,
+            resolve,
+            reject
+        );
+    });
+}
 
 document.getElementById('processBtn').addEventListener('click', async () => {
-    const targetLoudness = document.getElementById('loudnessInput').value;
-    console.log("測定結果：" + targetLoudness);
 
     if (fileArray.length === 0) {
         alert('ファイルを選択してください。');
         return;
     }
 
-    // ffmpegのインスタンスがまだロードされていない場合にのみロードする
-    if (ffmpeg === null) {
-        ffmpeg = new FFmpeg()
-        await ffmpeg.load({
-            coreURL: "/assets/core/package/dist/umd/ffmpeg-core.js",
-        });
+    // AudioContextが未定義の場合、または閉じられている場合は新たに作成
+    if (!audioContext || audioContext.state === 'closed') {
+        audioContext = new AudioContext();
     }
 
     for (const file of fileArray) {
         const name = file.name;
         const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
-        const tempFileName = "temp_" + Date.now() + "_" + wavFileName;
 
         try {
             console.log(`"${name}"を処理中...`);
 
-            await ffmpeg.writeFile(name, await fetchFile(file));
+            const arrayBuffer = await file.arrayBuffer();
 
-            // ラウドネス正規化を適用してWAVとして出力
-            await ffmpeg.exec(['-i', name, '-af', `loudnorm=I=${targetLoudness}`, tempFileName]);
+            // オーディオデータをデコード
+            const audioBuffer = await decodeAudioDataPromise(audioContext, arrayBuffer);
 
-            const data = await ffmpeg.readFile(tempFileName);
-
-            downloadFile(data, wavFileName);
+            // ノーマライズ処理とダウンロード
+            await processLoudnorm(audioBuffer, wavFileName);
 
             console.log(`"${name}"の処理が完了しました。`);
 
@@ -42,7 +44,83 @@ document.getElementById('processBtn').addEventListener('click', async () => {
             alert(`${name}の処理中にエラーが発生しました。`);
         }
     }
+
+    alert('全ての音量の調整と、ダウンロードフォルダへの保存が完了しました。')
 });
+
+async function processLoudnorm(audioBuffer, wavFileName) {
+    let data;
+    const pyodide = window.pyodide
+
+    if (audioBuffer.numberOfChannels <= 2) {
+        let tmp_data = [];
+
+        for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+            tmp_data.push(audioBuffer.getChannelData(i));
+        }
+
+        data = transformShape(tmp_data);
+
+    } else {
+        error_message = 'Unsupported number of channels : ' + audioBuffer.numberOfChannels
+        console.error(error_message);
+        throw new Error(error_message);
+    }
+
+    // 直接pyodide.globalsにキーを設定
+    pyodide.globals.set("sampleRate_js", audioBuffer.sampleRate);
+    pyodide.globals.set("data_js", pyodide.toPy(data));
+    pyodide.globals.set("target_loudness", parseFloat(document.getElementById('loudnessInput').value));
+
+    await window.pyodide.runPythonAsync(`
+    import numpy as np
+    import pyloudnorm_custom_package as pyln
+    from scipy.io import wavfile
+    from io import BytesIO
+    import base64
+    import pyodide
+
+    default_block_size = 0.400  # 秒
+
+    # JavaScriptから渡された変数をPythonで受け取る
+    sample_rate = sampleRate_js
+    data = np.array(data_js)
+
+    # オーディオファイルの長さを計算（秒）
+    audio_length = len(data) / sample_rate
+
+    # 使用するブロックサイズを決定。デフォルトのブロックサイズを超えそうなものは小さくする。
+    block_size = audio_length - 0.01 if audio_length < default_block_size + 0.01 else default_block_size
+
+    meter = pyln.Meter(sample_rate, block_size=block_size)
+    loudness = meter.integrated_loudness(data)
+
+    # 目標のラウドネスレベルに正規化
+    loudness_normalized_audio = pyln.normalize.loudness(data, loudness, float(target_loudness))
+
+    # WAVファイルをメモリ上に生成し、Base64でエンコード
+    memfile = BytesIO()
+    loudness_normalized_audio_int16 = np.int16(loudness_normalized_audio * 32767)
+    wavfile.write(memfile, sample_rate, loudness_normalized_audio_int16)
+    memfile.seek(0)
+    wav_base64 = base64.b64encode(memfile.read()).decode('utf-8')
+
+    # javascriptへ渡す
+    wav_base64_py = pyodide.to_js(wav_base64)
+    `);
+
+    // Pythonから受け取ったBase64エンコードされたWAVデータ
+    const wavBase64 = pyodide.globals.get("wav_base64_py");
+
+    // Base64デコードしてBlobオブジェクトを生成
+    const byteCharacters = atob(wavBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    downloadFile(new Uint8Array(byteNumbers), wavFileName);
+}
 
 function downloadFile(data, fileName) {
     const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/wav' }));
@@ -52,4 +130,20 @@ function downloadFile(data, fileName) {
     document.body.appendChild(a);
     a.click();
     a.remove();
+}
+
+function transformShape(array) {
+    // 最初に、入力配列の各列の要素を集めた新しい配列を作成
+    let result = [];
+
+    // 入力配列の列数を取得
+    const columns = array[0].length;
+
+    // 各列に対してループを実行
+    for (let col = 0; col < columns; col++) {
+        let newRow = array.map(row => row[col]);
+        result.push(newRow);
+    }
+
+    return result;
 }

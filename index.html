@@ -3,11 +3,11 @@
     <title>Sound Adjuster</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
-    <script src="/assets/ffmpeg/package/dist/umd/ffmpeg.js"></script>
-    <script src="/assets/util/package/dist/umd/index.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script> -->
+    <script src='pyodide.js'></script>
   </head>
   <body>
-    <h1>Sound Adjuster</h1>
+    <h1><a href="https://github.com/SoundAdjuster/SoundAdjuster.github.io/" style="color: black; text-decoration: none;">Sound Adjuster</a></h1>
 
     <!-- ドラッグ＆ドロップエリア -->
     <div id="dropZone" style="border: 2px dashed #aaa; padding: 20px; text-align: center;">
@@ -26,7 +26,31 @@
       <button onclick="changeLoudness(0.1)">+</button>
     </div>
 
-    <button id="processBtn">処理開始</button>
+    <button id="processBtn" disabled>処理開始</button>
+
+    <script>
+      async function loadPyodideAndCheckLibrary() {
+          // Pyodideを初期化
+          const pyodide = await loadPyodide({
+            indexURL : "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"
+          });
+
+          await pyodide.loadPackage('micropip');
+          await pyodide.runPythonAsync(`
+              import micropip
+              await micropip.install('scipy')
+              await micropip.install('pyloudnorm-custom-package')
+          `);
+
+          window.pyodide = pyodide;
+          console.log('Pyodide is available.');
+
+          // ボタンをアクティブにする
+          document.getElementById('processBtn').disabled = false;
+      }
+
+      loadPyodideAndCheckLibrary();
+    </script>
 
     <script>
     // ラウドネス値の増減を行う関数

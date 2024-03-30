@@ -4,8 +4,15 @@
 
 https://soundadjuster.github.io/
 
-技術的にはFFmpeg Wasmを使用しています。
+技術的にはブラウザ上でpyodideからpythonのpyloudnormで
+ラウドネスノーマライズを行っています。
 
-https://github.com/ffmpegwasm/ffmpeg.wasm
+そのため、ラウドネスノーマライズの精度はpyloudnormに依存します。
+pyloudnorm自体の制度がかなり高いので、大きく外れることはないと思います。
 
-そのため、ラウドネスノーマライズの精度はFFmpegに依存します。
+しかし、音声ファイルが1秒に満たないなどの場合は、多少のズレも出てくるかもしれません。
+
+またpyloudnormはITU-R BS.1770-4 loudness algorithmを採用しているようですが、
+規格化されたアルゴリズムとはいえ万能ではありません。
+自身の作品に対する評価は最終的に自身で行うようお願いいたします。
+開発者から当ウェブアプリの利用に関して損害などを補償することは一切ございません。
