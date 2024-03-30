@@ -53,15 +53,42 @@
     </script>
 
     <script>
+    // ページの読み込み時にlocalStorageから値を取得し、入力欄に設定する
+    function initialize() {
+      var loudnessInput = document.getElementById('loudnessInput');
+
+      // localStorageから値を取得
+      var storedLoudness = localStorage.getItem('loudnessValue');
+
+      // 値が存在すれば、その値を入力欄に設定
+      if(storedLoudness !== null) {
+        loudnessInput.value = storedLoudness;
+      }
+
+      // 入力値が変更された時、その値をlocalStorageに保存
+      loudnessInput.addEventListener('input', function() {
+        localStorage.setItem('loudnessValue', loudnessInput.value);
+      });
+    }
+
+    if (document.readyState === 'loading') {  // ドキュメントがまだ読み込み中の場合
+      document.addEventListener('DOMContentLoaded', initialize);
+    } else {  // ドキュメントの読み込みが既に完了している場合
+      initialize();
+    }
+    </script>
+
+    <script>
     // ラウドネス値の増減を行う関数
     function changeLoudness(change) {
-      var loudnessInput = document.getElementById('loudnessInput');
-      var currentVal = parseFloat(loudnessInput.value);
-      var newVal = currentVal + change;
+      const loudnessInput = document.getElementById('loudnessInput');
+      const currentVal = parseFloat(loudnessInput.value);
+      const newVal = currentVal + change;
 
       // 最小値と最大値の範囲内に新しい値を制限する
       if (newVal >= parseFloat(loudnessInput.min) && newVal <= parseFloat(loudnessInput.max)) {
           loudnessInput.value = newVal.toFixed(1); // 値を0.1単位で固定
+          localStorage.setItem('loudnessValue', loudnessInput.value);
       }
     }
     </script>
