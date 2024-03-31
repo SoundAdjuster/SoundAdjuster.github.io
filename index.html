@@ -97,6 +97,8 @@
 
 
     <script>
+    // 許可されたファイル形式のリスト
+    const allowedFileTypes = ['.mp3', '.wav', '.aac', '.m4a', '.flac', '.ogg'];
    // ファイルの状態を保持するための配列
     let fileArray = [];
 
@@ -128,25 +130,36 @@
         updateFileList();
     });
 
+    // ファイルが許可された形式かチェックする関数
+    function isAllowedFileType(fileName) {
+        return allowedFileTypes.some(type => fileName.endsWith(type));
+    }
+
     // 新しいファイルを既存の配列に追加する関数
     function addFiles(newFiles) {
-        for (const file of newFiles) {
-            let uniqueName = file.name;
-            let duplicateCount = 1; // 重複があった場合にカウントを増やす
-
-            // 既存のファイルと名前が重複しているか確認
-            while (fileArray.some(f => f.name === uniqueName)) {
-                const extensionIndex = file.name.lastIndexOf('.');
-                const namePart = file.name.slice(0, extensionIndex);
-                const extensionPart = file.name.slice(extensionIndex);
-                uniqueName = `${namePart}(${duplicateCount++})${extensionPart}`;
-            }
-
-            // ユニークな名前でファイルオブジェクトを配列に追加
-            const fileWithUniqueName = new File([file], uniqueName, { type: file.type });
-            fileArray.push(fileWithUniqueName);
+    for (const file of newFiles) {
+        // ファイルが許可された形式に一致するかチェック
+        if (!isAllowedFileType(file.name)) {
+            alert(`${file.name} は許可されたファイル形式ではありません。`);
+            continue; // 一致しない場合はスキップ
         }
+
+        let uniqueName = file.name;
+        let duplicateCount = 1; // 重複があった場合にカウントを増やす
+
+        // 既存のファイルと名前が重複しているか確認
+        while (fileArray.some(f => f.name === uniqueName)) {
+            const extensionIndex = file.name.lastIndexOf('.');
+            const namePart = file.name.slice(0, extensionIndex);
+            const extensionPart = file.name.slice(extensionIndex);
+            uniqueName = `${namePart}(${duplicateCount++})${extensionPart}`;
+        }
+
+        // ユニークな名前でファイルオブジェクトを配列に追加
+        const fileWithUniqueName = new File([file], uniqueName, { type: file.type });
+        fileArray.push(fileWithUniqueName);
     }
+}
 
     // 選択されたファイルのリストをUIに表示する関数
     function updateFileList() {
