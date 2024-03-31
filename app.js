@@ -12,8 +12,6 @@ function decodeAudioDataPromise(audioContext, arrayBuffer) {
     });
 }
 
-
-
 processBtn.addEventListener('click', async () => {
     if (fileArray.length === 0) {
         alert('ファイルを選択してください。');
@@ -62,11 +60,11 @@ async function processAudioFiles() {
             const audioBuffer = await decodeAudioDataPromise(audioContext, arrayBuffer);
 
             // ノーマライズ処理
-            const wavFile = await processLoudnorm(audioBuffer, wavFileName);
+            const [wavFile, afterLoudness] = await processLoudnorm(audioBuffer, wavFileName);
 
             createDownloadLink(wavFile, wavFileName, index);
 
-            console.log(`"${name}"の処理が完了しました。`);
+            console.log(`"${name}"の処理が完了しました。調整後のラウドネスは${afterLoudness}です。`);
 
         } catch (error) {
             alert(`${name}の処理中にエラーが発生しました。`);
@@ -135,10 +133,12 @@ async function processLoudnorm(audioBuffer) {
 
     # javascriptへ渡す
     wav_base64_py = pyodide.to_js(wav_base64)
+    after_loudness_py = pyodide.to_js(meter.integrated_loudness(loudness_normalized_audio))
     `);
 
     // Pythonから受け取ったBase64エンコードされたWAVデータ
     const wavBase64 = pyodide.globals.get("wav_base64_py");
+    const afterLoudness = pyodide.globals.get("after_loudness_py");
 
     // Base64デコード
     const byteCharacters = atob(wavBase64);
@@ -146,9 +146,10 @@ async function processLoudnorm(audioBuffer) {
     for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
+    wavFile = new Uint8Array(byteNumbers);
 
-    // バイナリデータに戻して返す
-    return new Uint8Array(byteNumbers);
+    // wavのバイナリデータを返す
+    return [wavFile, afterLoudness];
 }
 
 function createDownloadLink(data, fileName, index) {
