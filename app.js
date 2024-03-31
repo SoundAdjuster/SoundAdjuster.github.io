@@ -1,4 +1,5 @@
 let audioContext;
+const processBtn = document.getElementById('processBtn');
 
 // decodeAudioDataをプロミス化するヘルパー関数
 function decodeAudioDataPromise(audioContext, arrayBuffer) {
@@ -11,18 +12,43 @@ function decodeAudioDataPromise(audioContext, arrayBuffer) {
     });
 }
 
-document.getElementById('processBtn').addEventListener('click', async () => {
 
+
+processBtn.addEventListener('click', async () => {
     if (fileArray.length === 0) {
         alert('ファイルを選択してください。');
         return;
     }
 
+    // 最初の状態を保存
+    const originalTransition = processBtn.style.transition;
+    const originalText = processBtn.innerText;
+    const originalColor = processBtn.style.backgroundColor;
+
+    // ボタンのスタイルとテキストを変更し、無効化
+    processBtn.style.transition = 'none';
+    processBtn.innerText = '処理中...';
+    processBtn.style.backgroundColor = '#ccc';
+    processBtn.style.cursor = 'default'; // マウスカーソルを「操作不可」に変更
+    processBtn.disabled = true;
+
+    await processAudioFiles();
+
+    // 処理が終わったら元の状態に戻す
+    processBtn.style.transition = originalTransition;
+    processBtn.innerText = originalText;
+    processBtn.style.backgroundColor = originalColor;
+    processBtn.style.cursor = 'pointer';
+    processBtn.disabled = false;
+});
+
+async function processAudioFiles() {
     // AudioContextが未定義の場合、または閉じられている場合は新たに作成
     if (!audioContext || audioContext.state === 'closed') {
         audioContext = new AudioContext();
     }
 
+    let index = 0;
     for (const file of fileArray) {
         const name = file.name;
         const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
@@ -35,20 +61,22 @@ document.getElementById('processBtn').addEventListener('click', async () => {
             // オーディオデータをデコード
             const audioBuffer = await decodeAudioDataPromise(audioContext, arrayBuffer);
 
-            // ノーマライズ処理とダウンロード
-            await processLoudnorm(audioBuffer, wavFileName);
+            // ノーマライズ処理
+            const wavFile = await processLoudnorm(audioBuffer, wavFileName);
+
+            createDownloadLink(wavFile, wavFileName, index);
 
             console.log(`"${name}"の処理が完了しました。`);
 
         } catch (error) {
             alert(`${name}の処理中にエラーが発生しました。`);
         }
+
+        index++;
     }
+}
 
-    alert('全ての音量の調整と、ダウンロードフォルダへの保存が完了しました。')
-});
-
-async function processLoudnorm(audioBuffer, wavFileName) {
+async function processLoudnorm(audioBuffer) {
     let data;
     const pyodide = window.pyodide
 
@@ -112,24 +140,31 @@ async function processLoudnorm(audioBuffer, wavFileName) {
     // Pythonから受け取ったBase64エンコードされたWAVデータ
     const wavBase64 = pyodide.globals.get("wav_base64_py");
 
-    // Base64デコードしてBlobオブジェクトを生成
+    // Base64デコード
     const byteCharacters = atob(wavBase64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
 
-    downloadFile(new Uint8Array(byteNumbers), wavFileName);
+    // バイナリデータに戻して返す
+    return new Uint8Array(byteNumbers);
 }
 
-function downloadFile(data, fileName) {
-    const url = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/wav' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+function createDownloadLink(data, fileName, index) {
+    const url = URL.createObjectURL(new Blob([data], { type: 'audio/wav' }));
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = fileName;
+    downloadLink.textContent = "Download";
+
+    // fileListContainerから適切なリストアイテムを見つける
+    const listItems = document.querySelectorAll('#fileList .download-link');
+    if (index < listItems.length) {
+        const downloadEle = listItems[index];
+        downloadEle.innerHTML = "";
+        downloadEle.appendChild(downloadLink);
+    }
 }
 
 function transformShape(array) {

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="description" content="Sound Adjusterは複数の音声ファイル（主に効果音）の音量を一括で揃えます。音量は人の感覚に近くなるようラウドネス値を参照します。">
     <link rel="stylesheet" href="style.css">
-    <!-- <script src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script> -->
-    <script src='pyodide.js'></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script>
+    <!-- <script src='pyodide.js'></script> -->
   </head>
   <body>
     <h1><a href="https://github.com/SoundAdjuster/SoundAdjuster.github.io/" style="color: black; text-decoration: none;">Sound Adjuster</a></h1>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- 選択されたファイルのリストを表示するエリア -->
-    <div id="fileList"></div>
+    <div id="fileList" class="file-list"></div>
 
     <!-- ラウドネス値の入力: 大きな増減ボタンを提供する -->
     <div id="loudnessControl">
@@ -163,17 +163,26 @@
 
     // 選択されたファイルのリストをUIに表示する関数
     function updateFileList() {
-        fileListContainer.innerHTML = '';
-        const list = document.createElement('ul');
+      const fileListContainer = document.getElementById('fileList');
+      fileListContainer.innerHTML = ''; // 既存のリストをクリア
 
-        for (const file of fileArray) {
-            const listItem = document.createElement('li');
-            listItem.textContent = file.name;
-            list.appendChild(listItem);
-        }
+      fileArray.forEach((file, index) => {
+          const fileListItem = document.createElement('div');
+          fileListItem.className = 'file-list-item';
 
-        fileListContainer.appendChild(list);
-    }
+          const fileName = document.createElement('span');
+          fileName.textContent = file.name;
+          fileName.className = 'file-name';
+
+          const downloadLink = document.createElement('span');
+          downloadLink.textContent = 'Download';
+          downloadLink.className = 'download-link';
+
+          fileListItem.appendChild(fileName);
+          fileListItem.appendChild(downloadLink);
+          fileListContainer.appendChild(fileListItem);
+      });
+  }
     </script>
     <script src="app.js"></script>
   </body>

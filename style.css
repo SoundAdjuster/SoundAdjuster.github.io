@@ -36,7 +36,7 @@ h1 {
 #loudnessControl {
   display: inline-flex;
   align-items: center;
-  margin-bottom: 20px;
+  margin: 20px;
 }
 
 #loudnessControl button, #processBtn {
@@ -105,6 +105,33 @@ h1 {
 .popup:hover {
   visibility: visible;
 }
+
+#fileList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%; /* コンテナの幅を親要素に合わせます */
+  max-width: 300px; /* 最大幅を600pxに設定するか、任意の値に調整 */
+  margin: 0 auto; /* 中央揃え */
+}
+
+.file-list-item {
+  display: flex;
+  justify-content: space-between; /* 要素を両端に寄せます */
+  align-items: center;
+  width: 100%; /* 各項目の幅をコンテナに合わせます */
+  padding: 5px 0; /* 上下のパディングを設定 */
+}
+
+.file-name {
+  flex-grow: 1; /* ファイル名が利用可能なスペースを埋めるように設定 */
+  margin-right: 10px; /* ファイル名とダウンロードリンクの間に余白を設定 */
+}
+
+.download-link {
+  white-space: nowrap; /* ダウンロードリンクが折り返さないように設定 */
+}
+
 
 /* ダークモード対応スタイル */
 /* @media (prefers-color-scheme: dark) {
