@@ -27,7 +27,7 @@ processBtn.addEventListener('click', async () => {
 
     // ボタンのスタイルとテキストを変更し、無効化
     processBtn.style.transition = 'none';
-    processBtn.innerText = '処理中...';
+    processBtn.innerText = '実行中...';
     processBtn.style.backgroundColor = '#ccc';
     processBtn.style.cursor = 'default'; // マウスカーソルを「操作不可」に変更
     processBtn.disabled = true;

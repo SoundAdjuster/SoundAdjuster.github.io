@@ -8,10 +8,10 @@
     <!-- <script src='pyodide.js'></script> -->
   </head>
   <body>
-    <h1><a href="https://github.com/SoundAdjuster/SoundAdjuster.github.io/" style="color: black; text-decoration: none;">Sound Adjuster</a></h1>
+    <h1><a href="https://github.com/SoundAdjuster/SoundAdjuster.github.io/">Sound Adjuster</a></h1>
 
     <!-- ドラッグ＆ドロップエリア -->
-    <div id="dropZone" style="border: 2px dashed #aaa; padding: 20px; text-align: center;">
+    <div id="dropZone">
       ファイルをここにドラッグ＆ドロップ、または
       <input type="file" id="fileInput" accept=".mp3, .wav, .aac, .m4a, .flac, .ogg" multiple hidden>
       <button onclick="document.getElementById('fileInput').click();">ファイルを選択</button>
@@ -28,7 +28,7 @@
       <span id="loudnessPopup" class="popup"> ラウドネス値を指定します(-50~0)。<br> 大きすぎる値は音割れを起こします。</span>
     </div>
 
-    <button id="processBtn" disabled>処理開始</button>
+    <button id="processBtn" class="loading" disabled>準備中...</button>
 
     <script>
       async function loadPyodideAndCheckLibrary() {
@@ -48,7 +48,10 @@
           console.log('Pyodide is available.');
 
           // ボタンをアクティブにする
-          document.getElementById('processBtn').disabled = false;
+          const processBtn = document.getElementById('processBtn');
+          processBtn.innerText = '実行';
+          processBtn.disabled = false;
+          processBtn.classList.remove('loading')
       }
 
       loadPyodideAndCheckLibrary();
