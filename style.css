@@ -72,9 +72,7 @@ h1 a{
 }
 
 #hiddenEle {
-  display: block;
-  background-color: white;
-  color: white;
+  opacity: 0;
 }
 
 #loudnessControl button:hover, #processBtn:hover {
@@ -154,12 +152,17 @@ h1 a{
   white-space: nowrap; /* ダウンロードリンクが折り返さないように設定 */
 }
 
-
 /* style.css */
 #terms-link-container {
   position: fixed;
   right: 20px;
   bottom: 20px;
+}
+
+#terms-link-container:hover{
+  cursor: pointer;
+  color: blue;
+  text-decoration-line: underline;
 }
 
 #terms-popup {
@@ -196,15 +199,6 @@ h1 a{
   text-decoration: none;
   cursor: pointer;
 }
-
-#terms-link:hover{
-  cursor: pointer;
-  color: blue;
-  /* transition: all .25s ease; */
-  text-decoration-line: underline;
-}
-
-
 
 /* ダークモード対応スタイル */
 /* @media (prefers-color-scheme: dark) {
