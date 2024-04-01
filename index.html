@@ -32,71 +32,113 @@
 
     <div id="hiddenEle">高さの調整</div>
 
+    <!-- リンク -->
+    <div id="terms-link-container">
+      <a id="terms-link">説明・利用規約</a>
+    </div>
+
+    <!-- ポップアップ内容 -->
+    <div id="terms-popup">
+      <div class="popup-content">
+          <span class="close">&times;</span>
+          <h2>説明</h2>
+          <p>
+            アップロードされた音声ファイルに対してラウドネスノーマライズ（人の感覚に近い音量の均一化）をするウェブアプリです。<br>
+            いくつか検証したうえで精度の高かった手法を採用しています。
+          </p>
+          <h2>利用規約</h2>
+          <p>
+            国際的に採用されたアルゴリズムを使っていますが万能ではありません。<br>
+            自身の作品に対する評価は最終的に自身で行うようお願いいたします。<br>
+            また、開発者から当ウェブアプリの利用に関して損害などを補償することは一切ございません。
+          </p>
+      </div>
+    </div>
+
+
     <script>
-      async function loadPyodideAndCheckLibrary() {
-          // Pyodideを初期化
-          const pyodide = await loadPyodide({
-            indexURL : "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"
-          });
+    async function loadPyodideAndCheckLibrary() {
+        // Pyodideを初期化
+        const pyodide = await loadPyodide({
+          indexURL : "https://cdn.jsdelivr.net/pyodide/v0.18.0/full/"
+        });
 
-          await pyodide.loadPackage('micropip');
-          await pyodide.runPythonAsync(`
-              import micropip
-              await micropip.install('scipy')
-              await micropip.install('pyloudnorm-custom-package')
-          `);
+        await pyodide.loadPackage('micropip');
+        await pyodide.runPythonAsync(`
+            import micropip
+            await micropip.install('scipy')
+            await micropip.install('pyloudnorm-custom-package')
+        `);
 
-          window.pyodide = pyodide;
-          console.log('Pyodide is available.');
+        window.pyodide = pyodide;
+        console.log('Pyodide is available.');
 
-          // ボタンをアクティブにする
-          const processBtn = document.getElementById('processBtn');
-          processBtn.innerText = '実行';
-          processBtn.disabled = false;
-          processBtn.classList.remove('loading')
-      }
+        // ボタンをアクティブにする
+        const processBtn = document.getElementById('processBtn');
+        processBtn.innerText = '実行';
+        processBtn.disabled = false;
+        processBtn.classList.remove('loading')
+    }
 
-      loadPyodideAndCheckLibrary();
+    loadPyodideAndCheckLibrary();
     </script>
 
     <script>
     // ページの読み込み時にlocalStorageから値を取得し、入力欄に設定する
     function initialize() {
-      var loudnessInput = document.getElementById('loudnessInput');
+        var loudnessInput = document.getElementById('loudnessInput');
 
-      // localStorageから値を取得
-      var storedLoudness = localStorage.getItem('loudnessValue');
+        // localStorageから値を取得
+        var storedLoudness = localStorage.getItem('loudnessValue');
 
       // 値が存在すれば、その値を入力欄に設定
-      if(storedLoudness !== null) {
-        loudnessInput.value = storedLoudness;
-      }
+        if(storedLoudness !== null) {
+            loudnessInput.value = storedLoudness;
+        }
 
-      // 入力値が変更された時、その値をlocalStorageに保存
-      loudnessInput.addEventListener('input', function() {
-        localStorage.setItem('loudnessValue', loudnessInput.value);
-      });
+        // 入力値が変更された時、その値をlocalStorageに保存
+        loudnessInput.addEventListener('input', function() {
+            localStorage.setItem('loudnessValue', loudnessInput.value);
+        });
     }
 
     if (document.readyState === 'loading') {  // ドキュメントがまだ読み込み中の場合
-      document.addEventListener('DOMContentLoaded', initialize);
+        document.addEventListener('DOMContentLoaded', initialize);
     } else {  // ドキュメントの読み込みが既に完了している場合
-      initialize();
+        initialize();
     }
+    </script>
+
+    <script>
+    // 利用規約の挙動に関するscript
+    document.getElementById('terms-link').onclick = function() {
+        document.getElementById('terms-popup').style.display = 'block';
+    }
+
+    document.getElementsByClassName('close')[0].onclick = function() {
+        document.getElementById('terms-popup').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('terms-popup')) {
+            document.getElementById('terms-popup').style.display = 'none';
+        }
+    }
+
     </script>
 
     <script>
     // ラウドネス値の増減を行う関数
     function changeLoudness(change) {
-      const loudnessInput = document.getElementById('loudnessInput');
-      const currentVal = parseFloat(loudnessInput.value);
-      const newVal = currentVal + change;
+        const loudnessInput = document.getElementById('loudnessInput');
+        const currentVal = parseFloat(loudnessInput.value);
+        const newVal = currentVal + change;
 
-      // 最小値と最大値の範囲内に新しい値を制限する
-      if (newVal >= parseFloat(loudnessInput.min) && newVal <= parseFloat(loudnessInput.max)) {
-          loudnessInput.value = newVal.toFixed(1); // 値を0.1単位で固定
-          localStorage.setItem('loudnessValue', loudnessInput.value);
-      }
+        // 最小値と最大値の範囲内に新しい値を制限する
+        if (newVal >= parseFloat(loudnessInput.min) && newVal <= parseFloat(loudnessInput.max)) {
+            loudnessInput.value = newVal.toFixed(1); // 値を0.1単位で固定
+            localStorage.setItem('loudnessValue', loudnessInput.value);
+        }
     }
     </script>
 
