@@ -6,6 +6,7 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/pyodide/v0.18.0/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <!-- <script src='pyodide.js'></script> -->
   </head>
   <body>
@@ -20,6 +21,8 @@
 
     <!-- 選択されたファイルのリストを表示するエリア -->
     <div id="fileList" class="file-list"></div>
+
+    <div id="allDownload"></div>
 
     <!-- ラウドネス値の入力: 大きな増減ボタンを提供する -->
     <div id="loudnessControl">

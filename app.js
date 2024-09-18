@@ -47,6 +47,8 @@ async function processAudioFiles() {
     }
 
     let index = 0;
+    const zip = new JSZip();
+
     for (const file of fileArray) {
         const name = file.name;
         const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
@@ -62,7 +64,11 @@ async function processAudioFiles() {
             // ノーマライズ処理
             const [wavFile, afterLoudness] = await processLoudnorm(audioBuffer, wavFileName);
 
+            // ダウンロードリンクの生成
             createDownloadLink(wavFile, wavFileName, index);
+
+            // WAVファイルをZIPに追加
+            zip.file(wavFileName, wavFile);
 
             console.log(`"${name}"の処理が完了しました。調整後のラウドネスは${afterLoudness}です。`);
 
@@ -72,6 +78,12 @@ async function processAudioFiles() {
 
         index++;
     }
+
+    // すべてのファイルが処理されたらZIPファイルを生成
+    const zipContent = await zip.generateAsync({ type: "blob" });
+
+    // ダウンロードリンクを作成
+    createZipDownloadLink(zipContent);
 }
 
 async function processLoudnorm(audioBuffer) {
@@ -166,6 +178,20 @@ function createDownloadLink(data, fileName, index) {
         downloadEle.innerHTML = "";
         downloadEle.appendChild(downloadLink);
     }
+}
+
+function createZipDownloadLink(zipContent) {
+    const zipUrl = URL.createObjectURL(zipContent);
+    const zipLink = document.createElement('a');
+    zipLink.href = zipUrl;
+    zipLink.download = '調整済み効果音.zip';
+    zipLink.textContent = "すべてダウンロード (ZIP)";
+
+    // allDownloadエリアにリンクを追加
+    const allDownloadContainer = document.getElementById('allDownload');
+    allDownloadContainer.innerHTML = ""; // 既存のコンテンツをクリア
+    allDownloadContainer.style.display = "block";
+    allDownloadContainer.appendChild(zipLink);
 }
 
 function transformShape(array) {
