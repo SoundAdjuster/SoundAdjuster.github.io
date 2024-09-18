@@ -4,15 +4,11 @@
 
 https://soundadjuster.github.io/
 
-技術的にはブラウザ上でpyodideからpythonのpyloudnormで
-ラウドネスノーマライズを行っています。
-
+技術的には<a href="https://github.com/pyodide/pyodide">pyodide</a>によりブラウザ上でpythonを実行し、pythonのライブラリである<a href="https://github.com/csteinmetz1/pyloudnorm">pyloudnorm</a>を使用してラウドネスノーマライズを行っています。
 そのため、ラウドネスノーマライズの精度はpyloudnormに依存します。
 pyloudnorm自体の精度がかなり高いので、大きく外れることはないと思います。
 
-しかし、音声ファイルが1秒に満たないなどの場合は、多少のズレも出てくるかもしれません。
-
-またpyloudnormはITU-R BS.1770-4 loudness algorithmを採用しているようですが、
-規格化されたアルゴリズムとはいえ万能ではありません。
+pyloudnormはITU-R BS.1770-4 loudness algorithmを採用しているようですが、
+優れたアルゴリズムとはいえ万能ではありません。
 自身の作品に対する評価は最終的に自身で行うようお願いいたします。
 開発者から当ウェブアプリの利用に関して損害などを補償することは一切ございません。
