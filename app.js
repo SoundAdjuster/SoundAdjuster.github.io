@@ -54,7 +54,7 @@ async function processAudioFiles() {
         const wavFileName = name.replace(/\.[^/.]+$/, "") + ".wav";
 
         try {
-            console.log(`"${name}"を処理中...`);
+            console.log(`"${name}"を調整中...`);
 
             const arrayBuffer = await file.arrayBuffer();
 
@@ -62,15 +62,15 @@ async function processAudioFiles() {
             const audioBuffer = await decodeAudioDataPromise(audioContext, arrayBuffer);
 
             // ノーマライズ処理
-            const [wavFile, afterLoudness] = await processLoudnorm(audioBuffer, wavFileName);
+            const [wavFile, beforeLoudness, afterLoudness, isClipped] = await processLoudnorm(audioBuffer, wavFileName);
 
             // ダウンロードリンクの生成
-            createDownloadLink(wavFile, wavFileName, index);
+            createDownloadLink(wavFile, wavFileName, index, isClipped);
 
             // WAVファイルをZIPに追加
             zip.file(wavFileName, wavFile);
 
-            console.log(`"${name}"の処理が完了しました。調整後のラウドネスは${afterLoudness}です。`);
+            console.log(`"${name}"の調整前ラウドネス：${beforeLoudness}→調整後のラウドネス：${afterLoudness}`);
 
         } catch (error) {
             alert(`${name}の処理中にエラーが発生しました。`);
@@ -135,6 +135,7 @@ async function processLoudnorm(audioBuffer) {
 
     # 目標のラウドネスレベルに正規化
     loudness_normalized_audio = pyln.normalize.loudness(data, loudness, float(target_loudness))
+    is_clipped = np.max(np.abs(loudness_normalized_audio)) >= 1.0
 
     # WAVファイルをメモリ上に生成し、Base64でエンコード
     memfile = BytesIO()
@@ -145,12 +146,16 @@ async function processLoudnorm(audioBuffer) {
 
     # javascriptへ渡す
     wav_base64_py = pyodide.to_js(wav_base64)
+    before_loudness_py = pyodide.to_js(loudness)
     after_loudness_py = pyodide.to_js(meter.integrated_loudness(loudness_normalized_audio))
+    is_clipped_py = pyodide.to_js(int(is_clipped))
     `);
 
     // Pythonから受け取ったBase64エンコードされたWAVデータ
     const wavBase64 = pyodide.globals.get("wav_base64_py");
+    const beforeLoudness = pyodide.globals.get("before_loudness_py");
     const afterLoudness = pyodide.globals.get("after_loudness_py");
+    const isClipped = Boolean(pyodide.globals.get("is_clipped_py"));
 
     // Base64デコード
     const byteCharacters = atob(wavBase64);
@@ -161,10 +166,10 @@ async function processLoudnorm(audioBuffer) {
     wavFile = new Uint8Array(byteNumbers);
 
     // wavのバイナリデータを返す
-    return [wavFile, afterLoudness];
+    return [wavFile, beforeLoudness, afterLoudness, isClipped];
 }
 
-function createDownloadLink(data, fileName, index) {
+function createDownloadLink(data, fileName, index, isClipped) {
     const url = URL.createObjectURL(new Blob([data], { type: 'audio/wav' }));
     const downloadLink = document.createElement('a');
     downloadLink.href = url;
@@ -176,6 +181,7 @@ function createDownloadLink(data, fileName, index) {
     if (index < listItems.length) {
         const downloadEle = listItems[index];
         downloadEle.innerHTML = "";
+        downloadEle.style.backgroundColor = isClipped ? "red" : "";
         downloadEle.appendChild(downloadLink);
     }
 }
