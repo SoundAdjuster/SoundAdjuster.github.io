@@ -103,11 +103,18 @@
       // 値が存在すれば、その値を入力欄に設定
         if(storedLoudness !== null) {
             loudnessInput.value = storedLoudness;
+        } else {
+            localStorage.setItem('loudnessValue', loudnessInput.value);
         }
 
         loudnessInput.addEventListener('input', function() {
+            // 値が入力されてなかったら、保存されている値を読み込んでフィールドを埋める
+            loudnessInput.value = loudnessInput.value // loudnessInput.valueは文字列であるため、空文字の場合のみFalse
+                                  ? loudnessInput.value
+                                  : localStorage.getItem('loudnessValue');
+
             // もし正の値ならおかしいため、マイナスに変換する
-            loudnessInput.value = loudnessInput.value > 0
+            loudnessInput.value = loudnessInput.value > 0 // loudnessInput.valuehあNumberにキャストされてから比較される
                                   ? loudnessInput.value * -1
                                   : loudnessInput.value;
 
