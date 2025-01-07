@@ -105,8 +105,13 @@
             loudnessInput.value = storedLoudness;
         }
 
-        // 入力値が変更された時、その値をlocalStorageに保存
         loudnessInput.addEventListener('input', function() {
+            // もし正の値ならおかしいため、マイナスに変換する
+            loudnessInput.value = loudnessInput.value > 0
+                                  ? loudnessInput.value * -1
+                                  : loudnessInput.value;
+
+            // 値をlocalStorageに保存
             localStorage.setItem('loudnessValue', loudnessInput.value);
         });
     }
