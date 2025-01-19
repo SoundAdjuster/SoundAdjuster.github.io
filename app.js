@@ -74,6 +74,7 @@ async function processAudioFiles() {
 
         } catch (error) {
             alert(`${name}の処理中にエラーが発生しました。`);
+            console.error(error);
         }
 
         index++;
